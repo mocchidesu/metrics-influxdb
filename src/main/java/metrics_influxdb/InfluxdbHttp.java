@@ -10,12 +10,11 @@
 //
 //	You should have received a copy of the CC0 Public Domain Dedication along with
 //	this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-package metrics_influxdb.v08;
+package metrics_influxdb;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
@@ -58,7 +57,7 @@ public class InfluxdbHttp implements Influxdb {
 	}
 
 	public final URL url;
-	/** if true then print Json on System.err */
+	/** true => to print Json on System.err */
 	public boolean debugJson = false;
 	public JsonBuilder jsonBuilder = new JsonBuilderDefault();
 	/**
@@ -66,35 +65,26 @@ public class InfluxdbHttp implements Influxdb {
 	 * @throws IOException If the URL is malformed
 	 */
 	public InfluxdbHttp(String host, int port, String database, String username, String password) throws Exception  {
-		this("http", host, port, "", database, username, password, TimeUnit.MILLISECONDS);
+		this(host, port, "", database, username, password, TimeUnit.MILLISECONDS);
 	}
 
 	/**
-	 * Constructor with the InfluxDB time_precision parameter set to TimeUnit.MILLISECONDS
-	 * @throws IOException If the URL is malformed
-	 */
-	public InfluxdbHttp(String host, int port, String path, String database, String username, String password) throws Exception  {
-		this("http", host, port, path, database, username, password, TimeUnit.MILLISECONDS);
-	}
-	/**
-	 * @param timePrecision The precision of the epoch time that is sent to the server,
-	 *                      should be TimeUnit.MILLISECONDS unless you are using a custom Clock
-	 *                      that does not return milliseconds epoch time for getTime()
-	 * @throws IOException If the URL is malformed
-	 */
-	public InfluxdbHttp(String host, int port, String database, String username, String password, TimeUnit timePrecision) throws Exception  {
-		this("http", host, port, database, username, password, timePrecision);
-	}
+     * Constructor with the InfluxDB time_precision parameter set to TimeUnit.MILLISECONDS
+     * @throws IOException If the URL is malformed
+     */
+    public InfluxdbHttp(String host, int port, String path, String database, String username, String password) throws Exception  {
+        this(host, port, path, database, username, password, TimeUnit.MILLISECONDS);
+    }
 
-	/**
-	 * @param timePrecision The precision of the epoch time that is sent to the server,
-	 *                      should be TimeUnit.MILLISECONDS unless you are using a custom Clock
-	 *                      that does not return milliseconds epoch time for getTime()
-	 * @throws IOException If the URL is malformed
-	 */
-	public InfluxdbHttp(String scheme, String host, int port, String database, String username, String password, TimeUnit timePrecision) throws Exception  {
-		this(scheme, host, port, "", database, username, password, timePrecision);
-	}
+    /**
+     * @param timePrecision The precision of the epoch time that is sent to the server,
+     *                      should be TimeUnit.MILLISECONDS unless you are using a custom Clock
+     *                      that does not return milliseconds epoch time for getTime()
+     * @throws IOException If the URL is malformed
+     */
+    public InfluxdbHttp(String host, int port, String database, String username, String password, TimeUnit timePrecision) throws Exception  {
+        this(host, port, "", database, username, password, timePrecision);
+    }
 
 	/**
 	 * @param timePrecision The precision of the epoch time that is sent to the server,
@@ -102,13 +92,13 @@ public class InfluxdbHttp implements Influxdb {
 	 *                      that does not return milliseconds epoch time for getTime()
 	 * @throws IOException If the URL is malformed
 	 */
-	public InfluxdbHttp(String scheme, String host, int port, String path, String database, String username, String password, TimeUnit timePrecision) throws Exception  {
-		this.url = new URL(scheme, host, port,
-				path + "/db/" + database
-				+ "/series?u=" + URLEncoder.encode(username, UTF_8.name())
-				+ "&p=" + password
-				+ "&time_precision=" + toTimePrecision(timePrecision)
-				);
+	public InfluxdbHttp(String host, int port, String path, String database, String username, String password, TimeUnit timePrecision) throws Exception  {
+		this.url = new URL("http", host, port,
+			path + "/db/" + database
+			+ "/series?u=" + URLEncoder.encode(username, UTF_8.name())
+			+ "&p=" + password
+			+ "&time_precision=" + toTimePrecision(timePrecision)
+		);
 	}
 
 	/**

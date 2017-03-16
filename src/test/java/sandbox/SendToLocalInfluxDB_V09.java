@@ -21,9 +21,8 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 
-import metrics_influxdb.HttpInfluxdbProtocol;
 import metrics_influxdb.InfluxdbReporter;
-import metrics_influxdb.UdpInfluxdbProtocol;
+import metrics_influxdb.api.protocols.InfluxdbProtocols;
 
 public class SendToLocalInfluxDB_V09 {
 
@@ -53,10 +52,6 @@ public class SendToLocalInfluxDB_V09 {
 			exc.printStackTrace();
 			System.exit(1);
 		} finally {
-			if (r2 != null) {
-				r2.report();
-				r2.stop();
-			}
 			if (r1 != null) {
 				r1.report();
 				r1.stop();
@@ -74,7 +69,7 @@ public class SendToLocalInfluxDB_V09 {
 				.convertRatesTo(TimeUnit.SECONDS)
 				.convertDurationsTo(TimeUnit.MILLISECONDS)
 				.filter(MetricFilter.ALL)
-				.protocol(new UdpInfluxdbProtocol("127.0.0.1", 8089))
+				.protocol(InfluxdbProtocols.udp("127.0.0.1", 8089))
 				.build();
 		reporter.start(20, TimeUnit.SECONDS);
 		return reporter;
@@ -85,7 +80,7 @@ public class SendToLocalInfluxDB_V09 {
 				.convertRatesTo(TimeUnit.SECONDS)
 				.convertDurationsTo(TimeUnit.MILLISECONDS)
 				.filter(MetricFilter.ALL)
-				.protocol(new HttpInfluxdbProtocol("127.0.0.1", 8086, "test", "u0", "u0PWD"))
+				.protocol(InfluxdbProtocols.http("127.0.0.1", 8086, "admin", "a", "metrics"))
 				.build();
 		reporter.start(10, TimeUnit.SECONDS);
 		return reporter;

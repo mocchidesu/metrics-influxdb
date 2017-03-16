@@ -1,6 +1,6 @@
-package metrics_influxdb.v08;
+package metrics_influxdb;
 
-public interface Influxdb {
+interface Influxdb {
 	public void resetRequest();
 	public boolean hasSeriesData();
 	public long convertTimestamp(long timestamp);

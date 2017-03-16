@@ -1,4 +1,4 @@
-package metrics_influxdb.v08;
+package metrics_influxdb;
 
 interface JsonBuilder {
 

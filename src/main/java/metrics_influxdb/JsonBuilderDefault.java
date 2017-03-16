@@ -1,4 +1,4 @@
-package metrics_influxdb.v08;
+package metrics_influxdb;
 
 import java.util.Collection;
 
@@ -52,11 +52,11 @@ class JsonBuilderDefault implements JsonBuilder {
 				} else if((value instanceof Collection) && ((Collection<?>)value).size()<1) {
 					json.append("null");
 				} 
-				else if (value instanceof Double && (Double.isInfinite((double) value) || Double.isNaN((Double) value)))
+				else if (value instanceof Double && Double.isInfinite((double) value))
 				{
 					json.append("null");
 				}
-				else if (value instanceof Float && (Float.isInfinite((float) value) || Float.isNaN((Float) value)))
+				else if (value instanceof Float && Float.isInfinite((float) value))
 				{
 					json.append("null");
 				}

@@ -1,5 +1,6 @@
 package metrics_influxdb.api.measurements;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,7 +12,7 @@ import java.util.Map;
  * 
  * If when splitting the initial metric name using the '.' character, the number of strings is not even, then the last 2 strings will be used to generate
  * the measurement-name.
- * <br>
+ * <br />
  *  Examples:
  *  <ul>
  *  <li>`server.actarus.cpu_load` will be transformed to a measurement called `cpu_load` with tags [[server=actarus]]</li>
@@ -19,37 +20,37 @@ import java.util.Map;
  *  </ul>
  */
 public class KeyValueMetricMeasurementTransformer implements MetricMeasurementTransformer {
-	private final static String SEPARATOR = "\\.";
+    private final static String SEPARATOR = "\\.";
+    
+    public KeyValueMetricMeasurementTransformer() {
+    }
 
-	public KeyValueMetricMeasurementTransformer() {
-	}
+    @Override
+    public Map<String, String> tags(String metricName) {
+        Map<String, String> generatedTags = new HashMap<>();
+        String[] splitted = metricName.split(SEPARATOR);
+        
+        int nbPairs = isEven(splitted.length)?(splitted.length-1)/2:(splitted.length/2)-1;
+        
+        for (int i = 0; i < nbPairs; i++) {
+            generatedTags.put(splitted[2*i], splitted[2*i+1]);
+        }
+        
+        return generatedTags;
+    }
 
-	@Override
-	public Map<String, String> tags(String metricName) {
-		Map<String, String> generatedTags = new HashMap<>();
-		String[] splitted = metricName.split(SEPARATOR);
+    public boolean isEven(int number) {
+        return (number % 2)==1;
+    }
 
-		int nbPairs = isEven(splitted.length)?(splitted.length-1)/2:(splitted.length/2)-1;
-
-		for (int i = 0; i < nbPairs; i++) {
-			generatedTags.put(splitted[2*i], splitted[2*i+1]);
-		}
-
-		return generatedTags;
-	}
-
-	public boolean isEven(int number) {
-		return (number % 2)==1;
-	}
-
-	@Override
-	public String measurementName(String metricName) {
-		String[] splitted = metricName.split(SEPARATOR);
-
-		if (isEven(splitted.length)) {
-			return splitted[splitted.length - 1];
-		} else {
-			return splitted[splitted.length - 2] + "." + splitted[splitted.length - 1];
-		}
-	}
+    @Override
+    public String measurementName(String metricName) {
+        String[] splitted = metricName.split(SEPARATOR);
+        
+        if (isEven(splitted.length)) {
+            return splitted[splitted.length - 1];
+        } else {
+            return splitted[splitted.length - 2] + "." + splitted[splitted.length - 1];
+        }
+    }
 }
