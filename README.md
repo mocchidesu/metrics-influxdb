@@ -15,6 +15,11 @@
 [![Build Status](https://travis-ci.org/davidB/metrics-influxdb.svg?branch=master)](https://travis-ci.org/davidB/metrics-influxdb)
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/davidB/metrics-influxdb/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
+# This Project is forked from DavidD's github.  Now, I need to make it works on Java7. Requires Mvn3, mvn2 does not work.
+
+## Additional
+Extended Counter implementation here, to receive additional tags
+
 # The library provide :
 
 * a lighter client than influxdb-java to push only series to an [InfluxDB](http://influxdb.org) server.
@@ -78,7 +83,7 @@ And if you are still using v08 influxdb you can use the deprecated old syntax as
         .forRegistry(registry)
         .build(influxdb);
     ...
-    
+
 or the new one
 
     final InfluxdbHttp influxdb = new InfluxdbHttp("127.0.0.1", 8086, "dev", "u0", "u0PWD");

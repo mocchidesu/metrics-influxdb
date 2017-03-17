@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 
+import metrics_influxdb.misc.AdditionalTaggingCounter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +51,8 @@ import metrics_influxdb.misc.VisibilityIncreasedForTests;
  *
  * @see <a href="http://influxdb.org/">InfluxDB - An open-source distributed
  *      time series database with no external dependencies.</a>
+ * 2017/03: Special Handling for counter which implements getIndividualCountPerTag
+ * This is handy to differentiate counter per network (i.e. count for Nextplus vs count for TruConnect)
  */
 public class InfluxdbReporter extends SkipIdleReporter {
 	private static String[] COLUMNS_TIMER = {
@@ -100,10 +103,10 @@ public class InfluxdbReporter extends SkipIdleReporter {
 		private TimeUnit durationUnit;
 		private MetricFilter filter;
 		private boolean skipIdleMetrics;
-		
-        @VisibilityIncreasedForTests InfluxDBCompatibilityVersions influxdbVersion;
-        @VisibilityIncreasedForTests InfluxdbProtocol protocol;
-        @VisibilityIncreasedForTests Influxdb influxdbDelegate;
+
+    @VisibilityIncreasedForTests InfluxDBCompatibilityVersions influxdbVersion;
+    @VisibilityIncreasedForTests InfluxdbProtocol protocol;
+    @VisibilityIncreasedForTests Influxdb influxdbDelegate;
 		@VisibilityIncreasedForTests Map<String, String> tags;
 		@VisibilityIncreasedForTests MetricMeasurementTransformer transformer = MetricMeasurementTransformer.NOOP;
 
@@ -206,29 +209,29 @@ public class InfluxdbReporter extends SkipIdleReporter {
 
         public ScheduledReporter build() {
             ScheduledReporter reporter;
-            
+
             switch (influxdbVersion) {
             case V08:
                 reporter = new InfluxdbReporter(registry, influxdbDelegate, clock, prefix, rateUnit, durationUnit, filter, skipIdleMetrics);
                 break;
             default:
-            	Sender s = null;
+              Sender sender = null;
                 if (protocol instanceof HttpInfluxdbProtocol) {
-                    s = new HttpInlinerSender((HttpInfluxdbProtocol) protocol);
+                    sender = new HttpInlinerSender((HttpInfluxdbProtocol) protocol);
                     // TODO allow registration of transformers
                     // TODO evaluate need of prefix (vs tags)
                 } else if (protocol instanceof UDPInfluxdbProtocol) {
-                	s = new UDPInlinerSender((UDPInfluxdbProtocol) protocol);
+                    sender = new UDPInlinerSender((UDPInfluxdbProtocol) protocol);
                 } else {
                     throw new IllegalStateException("unsupported protocol: " + protocol);
                 }
-                reporter = new MeasurementReporter(s, registry, filter, rateUnit, durationUnit, skipIdleMetrics, clock, tags, transformer);
+                reporter = new MeasurementReporter(sender, registry, filter, rateUnit, durationUnit, skipIdleMetrics, clock, tags, transformer);
             }
             return reporter;
         }
 
         /**
-         * Operates with influxdb version <= 08. 
+         * Operates with influxdb version <= 08.
          * @param delegate the influxdb delegate to use, cannot be null
          * @return the builder itself
          */
@@ -317,6 +320,13 @@ public class InfluxdbReporter extends SkipIdleReporter {
 		0l,
 		0l
 	} };
+  // Counter with additional tag
+  private final Object[][] pointsAdditionalTagCounter = { {
+          0l,
+          0l,
+          null
+  } };
+
 	private final Object[][] pointsGauge = { {
 		0l,
 		null
@@ -346,7 +356,7 @@ public class InfluxdbReporter extends SkipIdleReporter {
 
 	private InfluxdbReporter(MetricRegistry registry, MetricFilter filter, TimeUnit rateUnit, TimeUnit durationUnit) {
 	    super(registry, "influxdb-reporter", filter, rateUnit, durationUnit, true);
-	    
+
         this.influxdb = null;
         this.clock = null;
         this.prefix = "";
@@ -370,7 +380,15 @@ public class InfluxdbReporter extends SkipIdleReporter {
 			}
 
 			for (Map.Entry<String, Counter> entry : counters.entrySet()) {
-				reportCounter(entry.getKey(), entry.getValue(), timestamp);
+        // Handling AdditionaTaggingCounte in slightly different way
+        Counter counter = entry.getValue();
+        if (counter instanceof AdditionalTaggingCounter) {
+            LOGGER.info("Found Additional Tagging Counter here");
+            this.reportCounterWithTag(entry.getKey(), counter, timestamp);
+        } else {
+          // Regular counter.
+          reportCounter(entry.getKey(), counter, timestamp);
+        }
 			}
 
 			for (Map.Entry<String, Histogram> entry : histograms.entrySet()) {
@@ -440,6 +458,28 @@ public class InfluxdbReporter extends SkipIdleReporter {
 		assert (p.length == COLUMNS_HISTOGRAM.length);
 		influxdb.appendSeries(prefix, name, ".histogram", COLUMNS_HISTOGRAM, pointsHistogram);
 	}
+
+    /**
+     * Special handling for the Counter with dynamically generated tag, like network:nextplus and network:truconnect
+     */
+    private void reportCounterWithTag(String name, Counter counter, long timestamp) {
+        AdditionalTaggingCounter additionalTaggingCounter = (AdditionalTaggingCounter)counter;
+        Map<String, Counter> tagAndCounter = additionalTaggingCounter.getIndividualCountPerTag();
+        // Loop through # of tag values (i.e. tag:network, value:[nextplus,truconnect]
+        for (String tagNameAndValue: tagAndCounter.keySet()) {
+            String tagname = tagNameAndValue.split(AdditionalTaggingCounter.SEPARATOR)[0];
+            String tagVal = tagNameAndValue.split(AdditionalTaggingCounter.SEPARATOR)[1];
+
+            Object[] p = pointsAdditionalTagCounter[0];
+            // First position is always time.
+            p[0] = influxdb.convertTimestamp(timestamp);
+            p[1] = counter.getCount();
+            p[2] = tagVal;
+            //assert (p.length == COLUMNS_COUNT.length);
+            String [] TAG_NAMES = {"time", "count", tagname};
+            influxdb.appendSeries(prefix, name, ".count", TAG_NAMES, pointsAdditionalTagCounter);
+        }
+    }
 
 	private void reportCounter(String name, Counter counter, long timestamp) {
 		Object[] p = pointsCounter[0];
