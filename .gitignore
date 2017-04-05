@@ -1,10 +1,26 @@
-.cache
-.classpath
-.project
-.settings
-.gradle
-target
-bin
-build
-test-output
+/build
+/out
+/.gradle
+/bin
+/logs
+/derby.log
+/scripts
+/src/main/resources/version.properties
+/classes
+
+# Eclipse
+/.classpath
+/.project
+/.settings
+
+# Intellij
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Mac
+.DS_Store
+
+
 
