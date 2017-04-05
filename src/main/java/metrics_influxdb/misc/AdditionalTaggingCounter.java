@@ -12,5 +12,7 @@ public interface AdditionalTaggingCounter {
     String SEPARATOR = ":::";
 
     Map<String, Counter> getIndividualCountPerTag();
+    long getCount(String tagNameAndValue);
+    void inc(String tagNameAndValue);
 
 }

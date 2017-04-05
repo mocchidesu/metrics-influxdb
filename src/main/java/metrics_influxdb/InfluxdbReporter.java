@@ -467,13 +467,14 @@ public class InfluxdbReporter extends SkipIdleReporter {
         Map<String, Counter> tagAndCounter = additionalTaggingCounter.getIndividualCountPerTag();
         // Loop through # of tag values (i.e. tag:network, value:[nextplus,truconnect]
         for (String tagNameAndValue: tagAndCounter.keySet()) {
+            LOGGER.info("Additional counter for {}", tagNameAndValue);
             String tagname = tagNameAndValue.split(AdditionalTaggingCounter.SEPARATOR)[0];
             String tagVal = tagNameAndValue.split(AdditionalTaggingCounter.SEPARATOR)[1];
 
             Object[] p = pointsAdditionalTagCounter[0];
             // First position is always time.
             p[0] = influxdb.convertTimestamp(timestamp);
-            p[1] = counter.getCount();
+            p[1] = additionalTaggingCounter.getCount(tagNameAndValue);
             p[2] = tagVal;
             //assert (p.length == COLUMNS_COUNT.length);
             String [] TAG_NAMES = {"time", "count", tagname};
